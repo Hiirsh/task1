@@ -61,7 +61,7 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public List<String> getFilesList() {
+  public List<String> getFileList() {
     return amazonS3.listObjectsV2(bucketName)
         .getObjectSummaries()
         .stream()

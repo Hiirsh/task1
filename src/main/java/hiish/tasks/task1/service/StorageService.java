@@ -14,7 +14,7 @@ public interface StorageService {
 
   DownloadedResource download(String id);
 
-  List<String> getFilesList();
+  List<String> getFileList();
 
   S3ObjectInputStream deleteFile(String id);
 }

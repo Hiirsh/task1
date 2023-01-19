@@ -20,14 +20,14 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/s3")
 @AllArgsConstructor
 @SuppressWarnings("unused")
 @Log4j2
 public class FileController {
   StorageService storageService;
 
-  @GetMapping("/download/{id}")
+  @GetMapping("/{id}")
   public ResponseEntity<Resource> download(@PathVariable String id) {
     DownloadedResource downloadedResource = storageService.download(id);
     return ResponseEntity
@@ -37,10 +37,11 @@ public class FileController {
         .body(new InputStreamResource(downloadedResource.getInputStream()));
   }
 
-  @PostMapping(value = "/upload", produces = "application/json")
+  @PostMapping(value = "/", produces = "application/json")
   public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
     String key = storageService.upload(file);
     return new ResponseEntity<>(key, HttpStatus.OK);
   }
 
+  
 }
