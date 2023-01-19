@@ -8,7 +8,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-// import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.SdkClientException;
@@ -25,7 +24,6 @@ public class StorageServiceImpl implements StorageService {
   private static final String FILE_EXTENTION = "fileExtention";
   private final AmazonS3 amazonS3;
   private final String bucketName;
-  // private final S3Client s3Client;
 
   public StorageServiceImpl(AmazonS3 amazonS3, @Value("${aws.s3.bucket-name}") String bucketName) {
     this.amazonS3 = amazonS3;

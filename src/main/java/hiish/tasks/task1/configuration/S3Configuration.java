@@ -17,7 +17,7 @@ public class S3Configuration {
   @Bean
   AmazonS3 amazonS3() {
     AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-        endpointUrl, Regions.EU_CENTRAL_2.getName());
+        endpointUrl, Regions.US_EAST_1.getName());
     return AmazonS3ClientBuilder.standard()
         .withEndpointConfiguration(endpointConfiguration)
         .withPathStyleAccessEnabled(true)
