@@ -31,6 +31,7 @@ public class UserServiceImpl implements UserService, CommandLineRunner {
     User newUser = modelMapper.map(registerDto, User.class);
     String password = passwordEncoder.encode(registerDto.getPassword());
     newUser.setPassword(password);
+    newUser.setRole("user");
     repository.save(newUser);
     return modelMapper.map(newUser, UserDto.class);
   }

@@ -9,7 +9,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserDto {
   String login;
-  String firstName;
-  String lastName;
-  String roles;
 }

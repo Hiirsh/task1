@@ -1,15 +1,17 @@
-package hiish.tasks.task1.dto.user;
+package hiish.tasks.task1.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Builder
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserRegisterDto {
-  String login;
-  @Setter
-  String password;
+public class FileNameAndKeyDto {
+  String name;
+  String key;
 }

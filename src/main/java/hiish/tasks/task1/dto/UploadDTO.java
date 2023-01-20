@@ -9,5 +9,5 @@ import lombok.Setter;
 @Setter
 public class UploadDto {
   String key;
-  String fileName;
+  String name;
 }

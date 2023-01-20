@@ -13,9 +13,9 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 import hiish.tasks.task1.dao.FileRepository;
+import hiish.tasks.task1.dto.FileNameAndKeyDto;
 import hiish.tasks.task1.dto.exeptions.FileNotExist;
 import hiish.tasks.task1.model.DownloadedResource;
 import hiish.tasks.task1.model.File;
@@ -48,17 +48,15 @@ public class StorageServiceImpl implements StorageService {
     } catch (SdkClientException | IOException e) {
       e.printStackTrace();
     }
-
     return key;
   }
 
   @Override
-  public DownloadedResource download(String name) {
-    String key = getFileKey(name);
-    S3Object s3Object = amazonS3.getObject(bucketName, key);
-    String fileName = name + "." + s3Object.getObjectMetadata().getUserMetadata().get(FILE_EXTENTION);
-    Long contentLength = s3Object.getObjectMetadata().getContentLength();
+  public DownloadedResource download(String key) {
 
+    S3Object s3Object = amazonS3.getObject(bucketName, key);
+    String fileName = getFileName(key) + "." + s3Object.getObjectMetadata().getUserMetadata().get(FILE_EXTENTION);
+    Long contentLength = s3Object.getObjectMetadata().getContentLength();
     return DownloadedResource.builder()
         .id(key)
         .fileName(fileName)
@@ -69,11 +67,6 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public Iterable<String> getFileKeys() {
-    amazonS3.listObjectsV2(bucketName)
-        .getObjectSummaries()
-        .stream()
-        .map(o -> o)
-        .collect(Collectors.toList());
     return amazonS3.listObjectsV2(bucketName)
         .getObjectSummaries()
         .stream()
@@ -87,11 +80,21 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public S3ObjectInputStream deleteFile(String name) {
-    String key = getFileKey(name);
+  public Iterable<FileNameAndKeyDto> getFileNamesAndKeys() {
+    return repository.findAll().stream()
+        .map(f -> FileNameAndKeyDto.builder().name(f.getName()).key(f.getS3key()).build())
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public Boolean deleteFile(String key) {
     S3Object res = amazonS3.getObject(bucketName, key);
-    amazonS3.deleteObject(bucketName, key);
-    return res.getObjectContent();
+    if (res != null) {
+      amazonS3.deleteObject(bucketName, key);
+      repository.deleteById(key);
+      return true;
+    }
+    return false;
   }
 
   private ObjectMetadata expraObjectMetaData(MultipartFile file) {
@@ -102,8 +105,9 @@ public class StorageServiceImpl implements StorageService {
     return objectMetadata;
   }
 
-  private String getFileKey(String name){
-    File file = repository.findById(name).orElseThrow(() -> new FileNotExist(name));
-    return file.getS3key();
+  private String getFileName(String key) {
+    File file = repository.findById(key).orElseThrow(() -> new FileNotExist(key));
+    return file.getName();
   }
+
 }
