@@ -1,14 +1,17 @@
-{
-  "properties": [
-    {
-      "name": "aws.s3.endpoint-url",
-      "type": "java.lang.String",
-      "description": "A description for 'aws.s3.endpoint-url'"
-    },
-    {
-      "name": "aws.s3.bucket-name",
-      "type": "java.lang.String",
-      "description": "A description for 'aws.s3.backet-name'"
-    }
-  ]
-}
+{"properties": [
+  {
+    "name": "aws.s3.endpoint-url",
+    "type": "java.lang.String",
+    "description": "A description for 'aws.s3.endpoint-url'"
+  },
+  {
+    "name": "aws.s3.bucket-name",
+    "type": "java.lang.String",
+    "description": "A description for 'aws.s3.backet-name'"
+  },
+  {
+    "name": "password_expire_perion",
+    "type": "java.lang.String",
+    "description": "A description for 'password_expire_perion'"
+  }
+]}

@@ -14,22 +14,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import hiish.tasks.task1.dto.FileListDto;
+import hiish.tasks.task1.dto.UploadDto;
 import hiish.tasks.task1.model.DownloadedResource;
 import hiish.tasks.task1.service.StorageService;
-import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/s3")
-@AllArgsConstructor
-@SuppressWarnings("unused")
-@Log4j2
+@RequiredArgsConstructor
 public class FileController {
-  StorageService storageService;
+  final StorageService storageService;
 
-  @GetMapping("/{id}")
-  public ResponseEntity<Resource> download(@PathVariable String id) {
-    DownloadedResource downloadedResource = storageService.download(id);
+  @GetMapping("/{fileName}")
+  public ResponseEntity<Resource> download(@PathVariable String fileName) {
+    DownloadedResource downloadedResource = storageService.download(fileName);
     return ResponseEntity
         .ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + downloadedResource.getFileName())
@@ -37,11 +36,16 @@ public class FileController {
         .body(new InputStreamResource(downloadedResource.getInputStream()));
   }
 
-  @PostMapping(value = "/", produces = "application/json")
-  public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
+  @PostMapping(produces = "application/json")
+  public ResponseEntity<UploadDto> upload(@RequestParam("file") MultipartFile file) {
     String key = storageService.upload(file);
-    return new ResponseEntity<>(key, HttpStatus.OK);
+    UploadDto response = UploadDto.builder().key(key).fileName(file.getOriginalFilename()).build();
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  
+  @GetMapping()
+  public FileListDto getFileNamesList() {
+    Iterable<String> response = storageService.getFileNames();
+    return FileListDto.builder().files(response).build();
+  }
 }
