@@ -32,9 +32,7 @@ public class AuthorizationConfiguration {
       authorize
           .mvcMatchers("/api/v1/account/register").permitAll()
           .mvcMatchers(HttpMethod.PUT, "/api/v1/account/user/*/role/*").hasRole("ADMIN")
-          .mvcMatchers(HttpMethod.DELETE, "/avi/v1/s3/*").hasRole("ADMIN")
-          // .mvcMatchers(HttpMethod.PUT, "/api/v1/account/user/*/role/*").hasRole("admin")
-          // .mvcMatchers(HttpMethod.DELETE, "/avi/v1/s3/**").hasRole("admin")
+          .mvcMatchers(HttpMethod.DELETE, "/avi/v1/s3/*").access("hasRole('ADMIN') or hasRole('MODER')")
           .anyRequest().authenticated()
     );
     return http.build();
