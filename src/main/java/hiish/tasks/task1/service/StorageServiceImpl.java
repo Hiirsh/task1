@@ -88,13 +88,14 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public Boolean deleteFile(String key) {
-    S3Object res = amazonS3.getObject(bucketName, key);
-    if (res != null) {
+    try {
       amazonS3.deleteObject(bucketName, key);
       repository.deleteById(key);
       return true;
+    } catch (Exception e) {
+      return false;
     }
-    return false;
+
   }
 
   private ObjectMetadata expraObjectMetaData(MultipartFile file) {
