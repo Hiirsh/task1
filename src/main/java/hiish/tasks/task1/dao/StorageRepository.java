@@ -7,7 +7,7 @@ import org.springframework.data.repository.CrudRepository;
 
 import hiish.tasks.task1.model.File;
 
-public interface FileRepository extends CrudRepository<File, String> {
+public interface StorageRepository extends CrudRepository<File, String> {
   List<File> findAll();
 
   Optional<File> findOneByName(String name);

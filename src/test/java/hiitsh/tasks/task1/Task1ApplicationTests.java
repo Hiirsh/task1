@@ -1,41 +1,36 @@
 package hiitsh.tasks.task1;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
+import hiish.tasks.task1.Task1Application;
 
-import hiish.tasks.task1.dao.UserRepository;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = Task1ApplicationTests.class)
-@RunWith(SpringRunner.class)
 @Testcontainers
+@SpringBootTest(classes = Task1Application.class)
 class Task1ApplicationTests {
 
-	@Autowired
-	private UserRepository userRepository;
-
-	private static MySQLContainer<?> container = new MySQLContainer<>("mysql:latest")
-			.withDatabaseName("goza_task1_test")
+	@Container
+	public static MySQLContainer<?> mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql:latest"))
 			.withUsername("root")
-			.withPassword("1234");
+			.withPassword("1234")
+			.withDatabaseName("test");
 
 	@DynamicPropertySource
-	public static void overrideProps(DynamicPropertyRegistry registry){
-		registry.add("spring.datasorce.url", container::getJdbcUrl);
+	static void properties(DynamicPropertyRegistry registry){
+		registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
+		registry.add("spring.datasource.password", mySQLContainer::getPassword);
+		registry.add("spring.datasource.username", mySQLContainer::getUsername);
 	}
 
 	@Test
 	void contextLoads() {
-		assertNotNull(userRepository);
+		System.out.println("Context loaded!");
 	}
 
 }

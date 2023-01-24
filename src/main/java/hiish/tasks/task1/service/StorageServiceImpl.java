@@ -14,7 +14,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 
-import hiish.tasks.task1.dao.FileRepository;
+import hiish.tasks.task1.dao.StorageRepository;
 import hiish.tasks.task1.dto.FileNameAndKeyDto;
 import hiish.tasks.task1.dto.exeptions.FileNotExist;
 import hiish.tasks.task1.model.DownloadedResource;
@@ -26,10 +26,10 @@ public class StorageServiceImpl implements StorageService {
   private static final String FILE_EXTENTION = "fileExtention";
   private final AmazonS3 amazonS3;
   private final String bucketName;
-  private final FileRepository repository;
+  private final StorageRepository repository;
 
   public StorageServiceImpl(AmazonS3 amazonS3, @Value("${aws.s3.bucket-name}") String bucketName,
-      FileRepository repository) {
+      StorageRepository repository) {
     this.amazonS3 = amazonS3;
     this.bucketName = bucketName;
     this.repository = repository;
@@ -40,7 +40,7 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public String upload(MultipartFile multipartFile) {
-    String key = RandomStringUtils.randomAlphabetic(50);
+    String key = RandomStringUtils.randomAlphabetic(50) + "_" + multipartFile.getOriginalFilename();
     try {
       amazonS3.putObject(bucketName, key, multipartFile.getInputStream(), expraObjectMetaData(multipartFile));
       File newFile = new File(key, multipartFile.getOriginalFilename());
@@ -91,10 +91,10 @@ public class StorageServiceImpl implements StorageService {
     try {
       amazonS3.deleteObject(bucketName, key);
       repository.deleteById(key);
-      return true;
     } catch (Exception e) {
-      return false;
+      throw new FileNotExist(key);
     }
+    return true;
 
   }
 

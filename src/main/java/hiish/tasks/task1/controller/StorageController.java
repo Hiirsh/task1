@@ -24,8 +24,15 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/s3")
 @RequiredArgsConstructor
-public class FileController {
+public class StorageController {
   final StorageService storageService;
+
+  @PostMapping(produces = "application/json")
+  public ResponseEntity<UploadDto> uploadFile(@RequestParam("file") MultipartFile file) {
+    String key = storageService.upload(file);
+    UploadDto response = UploadDto.builder().key(key).name(file.getOriginalFilename()+file.getContentType()).build();
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
 
   @GetMapping("/{key}")
   public ResponseEntity<Resource> downloadFile(@PathVariable String key) {
@@ -35,13 +42,6 @@ public class FileController {
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + downloadedResource.getFileName())
         .contentLength(downloadedResource.getContentLength()).contentType(MediaType.APPLICATION_OCTET_STREAM)
         .body(new InputStreamResource(downloadedResource.getInputStream()));
-  }
-
-  @PostMapping(produces = "application/json")
-  public ResponseEntity<UploadDto> uploadFile(@RequestParam("file") MultipartFile file) {
-    String key = storageService.upload(file);
-    UploadDto response = UploadDto.builder().key(key).name(file.getOriginalFilename()).build();
-    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   @GetMapping()
