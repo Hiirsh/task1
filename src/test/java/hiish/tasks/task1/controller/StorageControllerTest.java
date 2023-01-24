@@ -1,14 +1,12 @@
 package hiish.tasks.task1.controller;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,10 +14,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.Base64Utils;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -29,8 +30,9 @@ import org.testcontainers.utility.DockerImageName;
 import hiish.tasks.task1.Task1Application;
 import hiish.tasks.task1.dao.StorageRepository;
 import hiish.tasks.task1.dao.UserRepository;
+import hiish.tasks.task1.dto.user.UserRegisterDto;
 import hiish.tasks.task1.model.User;
-import hiish.tasks.task1.service.StorageService;
+import hiish.tasks.task1.service.UserService;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -42,10 +44,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class StorageControllerTest {
 
   @Autowired
-  UserController userController;
+  UserRepository userRepository;
 
   @Autowired
-  UserRepository userRepository;
+  UserService userService;
 
   @Autowired
   StorageController storageController;
@@ -54,9 +56,6 @@ public class StorageControllerTest {
   StorageRepository storageRepository;
 
   @Autowired
-  StorageService storageService;
-  @Autowired
-
   MockMvc mockMvc;
 
   @Container
@@ -95,23 +94,28 @@ public class StorageControllerTest {
   void setUp() {
     userRepository.deleteAll();
     storageRepository.deleteAll();
-    userRepository.save(new User("admin", "admin", "admin"));
-    userRepository.save(new User("moder", "moder", "moder"));
-    userRepository.save(new User("user", "user", "user"));
+    userService.registerUser(new UserRegisterDto("admin", "admin"));
+    userService.changeRole("admin", "admin");
+    userService.registerUser(new UserRegisterDto("moder", "moder"));
+    userService.changeRole("moder", "moder");
+    userService.registerUser(new UserRegisterDto("user", "user"));
 
   }
 
   @Test
-  void testMySQLConnection() {
-    List<User> list = StreamSupport.stream(userRepository.findAll().spliterator(), false).collect(Collectors.toList());
-    assertTrue(list.size() == 3);
-  }
-
-  @Test
-  void testUploadFile() /* throws Exception */ {
-    // mockMvc.perform(post("/api/v1/"))
-    // .andExpect(status().isOk())
-    // .andReturn();
+  void testUploadFile() throws Exception {
+    MockMultipartFile file = new MockMultipartFile(
+        "file",
+        "hello.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "Hello, World!".getBytes());
+    mockMvc.perform(
+        multipart("/api/v1/s3")
+            .file(file)
+            .header(HttpHeaders.AUTHORIZATION,
+                "Basic " + Base64Utils.encodeToString("admin:admin".getBytes())))
+        .andExpect(status().isOk())
+        .andReturn();
   }
 
   @Test

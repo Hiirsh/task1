@@ -30,7 +30,7 @@ public class StorageController {
   @PostMapping(produces = "application/json")
   public ResponseEntity<UploadDto> uploadFile(@RequestParam("file") MultipartFile file) {
     String key = storageService.upload(file);
-    UploadDto response = UploadDto.builder().key(key).name(file.getOriginalFilename()+file.getContentType()).build();
+    UploadDto response = UploadDto.builder().key(key).name(file.getOriginalFilename() + file.getContentType()).build();
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 

@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @EqualsAndHashCode(of = "login")
@@ -18,6 +19,7 @@ import lombok.Setter;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class User implements Serializable {
   @Id
   String login;
