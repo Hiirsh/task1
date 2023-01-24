@@ -1,13 +1,12 @@
 package hiish.tasks.task1.controller;
 
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.stream.StreamSupport;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +19,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.Base64Utils;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -32,6 +32,7 @@ import hiish.tasks.task1.dao.StorageRepository;
 import hiish.tasks.task1.dao.UserRepository;
 import hiish.tasks.task1.dto.user.UserRegisterDto;
 import hiish.tasks.task1.model.User;
+import hiish.tasks.task1.service.StorageService;
 import hiish.tasks.task1.service.UserService;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -43,6 +44,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Testcontainers
 public class StorageControllerTest {
 
+  private final static String BASIC_URI = "/api/v1/s3/";
+
   @Autowired
   UserRepository userRepository;
 
@@ -50,10 +53,10 @@ public class StorageControllerTest {
   UserService userService;
 
   @Autowired
-  StorageController storageController;
+  StorageRepository storageRepository;
 
   @Autowired
-  StorageRepository storageRepository;
+  StorageService storageService;
 
   @Autowired
   MockMvc mockMvc;
@@ -104,33 +107,69 @@ public class StorageControllerTest {
 
   @Test
   void testUploadFile() throws Exception {
-    MockMultipartFile file = new MockMultipartFile(
-        "file",
-        "hello.txt",
-        MediaType.TEXT_PLAIN_VALUE,
-        "Hello, World!".getBytes());
+    MockMultipartFile file = createMultipartFile("testFile1.txt", "File for testing - 1");
     mockMvc.perform(
-        multipart("/api/v1/s3")
+        multipart(BASIC_URI)
             .file(file)
             .header(HttpHeaders.AUTHORIZATION,
-                "Basic " + Base64Utils.encodeToString("admin:admin".getBytes())))
+                createBasicAuthorization("admin")))
         .andExpect(status().isOk())
         .andReturn();
   }
 
   @Test
-  void testGetFilesInfo() {
-
+  void testGetFilesInfo() throws Exception {
+    String key1 = storageService.upload(createMultipartFile("test1.txt", "File for testing - 1"));
+    String key2 = storageService.upload(createMultipartFile("test2.txt", "File for testing - 2"));
+    String key3 = storageService.upload(createMultipartFile("test3.txt", "File for testing - 3"));
+    MvcResult result = mockMvc.perform(
+        get(BASIC_URI).header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("admin")))
+        .andExpect(status().isOk())
+        .andReturn();
+    String res = result.getResponse().getContentAsString();
+    assertTrue(res.contains(key1));
+    assertTrue(res.contains(key2));
+    assertTrue(res.contains(key3));
   }
 
   @Test
-  void testDeleteFile() {
-
+  void testDeleteFile() throws Exception {
+    String key = storageService.upload(createMultipartFile("test.txt", "File for testing"));
+    MvcResult result = mockMvc.perform(
+        delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("admin")))
+        .andExpect(status().isOk())
+        .andReturn();
+    assertTrue("true".equals(result.getResponse().getContentAsString()));
+    mockMvc.perform(
+        delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("user")))
+        .andExpect(status().isForbidden())
+        .andReturn();
   }
 
   @Test
-  void testDownloadFile() {
+  void testDownloadFile() throws Exception {
+    String key = storageService.upload(createMultipartFile("test.txt", "File for testing"));
+    MvcResult result = mockMvc.perform(
+        get(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("admin")))
+        .andExpect(status().isOk())
+        .andReturn();
+    assertEquals(result.getResponse().getContentAsString(), "File for testing");
+  }
 
+  private MockMultipartFile createMultipartFile(String fileName, String fileContent) {
+    return new MockMultipartFile(
+        "file",
+        fileName,
+        MediaType.TEXT_PLAIN_VALUE,
+        fileContent.getBytes());
+  }
+
+  protected String createBasicAuthorization(String login, String password) {
+    return "Basic " + Base64Utils.encodeToString((login + ":" + password).getBytes());
+  }
+
+  protected String createBasicAuthorization(String login) {
+    return "Basic " + Base64Utils.encodeToString((login + ":" + login).getBytes());
   }
 
 }
