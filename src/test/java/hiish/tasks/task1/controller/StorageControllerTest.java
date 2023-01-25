@@ -169,12 +169,4 @@ public class StorageControllerTest {
         fileContent.getBytes());
   }
 
-  // protected String createBasicAuthorization(String login, String password) {
-  //   return "Basic " + Base64Utils.encodeToString((login + ":" + password).getBytes());
-  // }
-
-  // protected String createBasicAuthorization(String login) {
-  //   return "Basic " + Base64Utils.encodeToString((login + ":" + login).getBytes());
-  // }
-
 }
