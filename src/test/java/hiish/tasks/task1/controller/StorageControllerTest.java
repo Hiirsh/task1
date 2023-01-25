@@ -39,10 +39,6 @@ import hiish.tasks.task1.dto.user.UserRegisterDto;
 import hiish.tasks.task1.model.User;
 import hiish.tasks.task1.service.StorageService;
 import hiish.tasks.task1.service.UserService;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = Task1Application.class)
 @AutoConfigureMockMvc
