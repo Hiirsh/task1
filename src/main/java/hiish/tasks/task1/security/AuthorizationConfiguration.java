@@ -31,7 +31,8 @@ public class AuthorizationConfiguration {
     http.authorizeRequests(authorize -> 
       authorize
           .mvcMatchers("/api/v1/account/register").permitAll()
-          .mvcMatchers(HttpMethod.PUT, "/api/v1/account/user/*/role/*").access("hasRole('ADMIN')")
+          .mvcMatchers(HttpMethod.PUT, "/api/v1/account/user/*/role/*").hasRole("ADMIN")
+          .mvcMatchers(HttpMethod.DELETE, "/api/v1/account/user/*").hasRole("ADMIN")
           .mvcMatchers(HttpMethod.DELETE, "/api/v1/s3/*").hasAnyRole("ADMIN", "MODER")
           .anyRequest().authenticated()
     );
