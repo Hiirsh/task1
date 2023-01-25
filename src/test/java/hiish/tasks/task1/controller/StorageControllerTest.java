@@ -80,17 +80,6 @@ public class StorageControllerTest {
       .withServices(S3)
       .withEnv("HOSTNAME_EXTERNAL", "localhost")
       .withExposedPorts(4567);
-/*
- * S3Client s3Client = S3Client
- * .builder()
- * .endpointOverride(localStack.getEndpointOverride(S3))
- * .credentialsProvider(
- * StaticCredentialsProvider.create(
- * AwsBasicCredentials.create(localStack.getAccessKey(),
- * localStack.getSecretKey())))
- * .region(Region.of(localStack.getRegion()))
- * .build();
- */
 
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
@@ -98,10 +87,7 @@ public class StorageControllerTest {
     registry.add("spring.datasource.password", mySQLContainer::getPassword);
     registry.add("spring.datasource.username", mySQLContainer::getUsername);
     registry.add("event-processing.order-event-bucket", () -> BUCKET_NAME);
-    // registry.add("cloud.aws.s3.endpoint", () -> localStack.getEndpointOverride(S3));
     registry.add("aws.s3.endpoint-url", () -> localStack.getEndpointOverride(S3));
-    // registry.add("cloud.aws.credentials.access-key", localStack::getAccessKey);
-    // registry.add("cloud.aws.credentials.secret-key", localStack::getSecretKey);
   }
 
   static User admin;
