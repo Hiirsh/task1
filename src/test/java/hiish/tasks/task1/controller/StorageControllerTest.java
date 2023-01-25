@@ -1,6 +1,9 @@
 package hiish.tasks.task1.controller;
 
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
+
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,11 +11,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -46,6 +51,8 @@ public class StorageControllerTest {
 
   private final static String BASIC_URI = "/api/v1/s3/";
 
+  private static final String BUCKET_NAME = "test-bucket";
+
   @Autowired
   UserRepository userRepository;
 
@@ -68,31 +75,43 @@ public class StorageControllerTest {
       .withDatabaseName("test");
 
   @Container
-  public static LocalStackContainer localStackContainer = new LocalStackContainer(
+  public static LocalStackContainer localStack = new LocalStackContainer(
       DockerImageName.parse("localstack/localstack:latest"))
-      .withServices(S3);
-
-  S3Client s3 = S3Client
-      .builder()
-      .endpointOverride(localStackContainer.getEndpointOverride(S3))
-      .credentialsProvider(
-          StaticCredentialsProvider.create(
-              AwsBasicCredentials.create(localStackContainer.getAccessKey(),
-                  localStackContainer.getSecretKey())))
-      .region(Region.of(localStackContainer.getRegion()))
-      .build();
+      .withServices(S3)
+      .withEnv("HOSTNAME_EXTERNAL", "localhost")
+      .withExposedPorts(4567);
+/*
+ * S3Client s3Client = S3Client
+ * .builder()
+ * .endpointOverride(localStack.getEndpointOverride(S3))
+ * .credentialsProvider(
+ * StaticCredentialsProvider.create(
+ * AwsBasicCredentials.create(localStack.getAccessKey(),
+ * localStack.getSecretKey())))
+ * .region(Region.of(localStack.getRegion()))
+ * .build();
+ */
 
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
     registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
     registry.add("spring.datasource.password", mySQLContainer::getPassword);
     registry.add("spring.datasource.username", mySQLContainer::getUsername);
+    registry.add("event-processing.order-event-bucket", () -> BUCKET_NAME);
+    // registry.add("cloud.aws.s3.endpoint", () -> localStack.getEndpointOverride(S3));
+    registry.add("aws.s3.endpoint-url", () -> localStack.getEndpointOverride(S3));
+    // registry.add("cloud.aws.credentials.access-key", localStack::getAccessKey);
+    // registry.add("cloud.aws.credentials.secret-key", localStack::getSecretKey);
   }
 
   static User admin;
   static User moder;
   static User user;
 
+  @BeforeAll
+  static void beforeAll() throws IOException, InterruptedException {
+    localStack.execInContainer("awslocal", "s3", "mb", "s3://" + BUCKET_NAME);
+  }
   @BeforeEach
   void setUp() {
     userRepository.deleteAll();
@@ -144,6 +163,10 @@ public class StorageControllerTest {
         delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("user")))
         .andExpect(status().isForbidden())
         .andReturn();
+    mockMvc.perform(
+        delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("admin")))
+        .andExpect(status().isNotFound())
+        .andReturn();
   }
 
   @Test
@@ -154,6 +177,14 @@ public class StorageControllerTest {
         .andExpect(status().isOk())
         .andReturn();
     assertEquals(result.getResponse().getContentAsString(), "File for testing");
+  }
+
+  @Test
+  void testDownloadNotExistingFile() throws Exception {
+    mockMvc.perform(
+        get(BASIC_URI + "/aaaaaaaaaaa").header(HttpHeaders.AUTHORIZATION, createBasicAuthorization("admin")))
+        .andExpect(status().isNotFound())
+        .andReturn();
   }
 
   private MockMultipartFile createMultipartFile(String fileName, String fileContent) {

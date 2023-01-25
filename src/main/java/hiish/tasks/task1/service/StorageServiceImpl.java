@@ -54,7 +54,12 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public DownloadedResource download(String key) {
 
-    S3Object s3Object = amazonS3.getObject(bucketName, key);
+    S3Object s3Object;
+    try {
+      s3Object = amazonS3.getObject(bucketName, key);
+    } catch (Exception e) {
+      throw new FileNotExist();
+    }
     String fileName = getFileName(key) + "." + s3Object.getObjectMetadata().getUserMetadata().get(FILE_EXTENTION);
     Long contentLength = s3Object.getObjectMetadata().getContentLength();
     return DownloadedResource.builder()
