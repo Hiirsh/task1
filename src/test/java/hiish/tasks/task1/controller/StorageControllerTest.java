@@ -89,10 +89,6 @@ public class StorageControllerTest {
   static User moder;
   static User user;
 
-  @BeforeAll
-  static void beforeAll() throws IOException, InterruptedException {
-    localStack.execInContainer("awslocal", "s3", "mb", "s3://" + BUCKET_NAME);
-  }
   @BeforeEach
   void setUp() {
     userRepository.deleteAll();
