@@ -1,4 +1,4 @@
-package hiish.tasks.task1.controller;
+package hiish.tasks.task1;
 
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
@@ -8,6 +8,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,8 +30,8 @@ import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import org.springframework.test.web.servlet.ResultMatcher;
 
-import hiish.tasks.task1.Task1Application;
 import hiish.tasks.task1.dao.StorageRepository;
 import hiish.tasks.task1.dao.UserRepository;
 import hiish.tasks.task1.dto.user.UserRegisterDto;
@@ -39,9 +43,10 @@ import utils.EncodeToBase64;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = Task1Application.class)
 @AutoConfigureMockMvc
 @Testcontainers
-public class StorageControllerTest {
+public class Task1ApplicationTest {
 
-  private final static String BASIC_URI = "/api/v1/s3";
+  private final static String BASIC_URI_STORAGE_CONTROLLER = "/api/v1/s3";
+  private final static String BASIC_URI_USER_CONTROLLER = "/api/v1/account/";
 
   private static final String BUCKET_NAME = "test-bucket";
 
@@ -78,8 +83,8 @@ public class StorageControllerTest {
     registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
     registry.add("spring.datasource.password", mySQLContainer::getPassword);
     registry.add("spring.datasource.username", mySQLContainer::getUsername);
-    registry.add("event-processing.order-event-bucket", () -> BUCKET_NAME);
     registry.add("aws.s3.endpoint-url", () -> localStack.getEndpointOverride(S3));
+    registry.add("aws.s3.bucket-name", () -> BUCKET_NAME);
   }
 
   static User admin;
@@ -102,7 +107,7 @@ public class StorageControllerTest {
   void testUploadFile() throws Exception {
     MockMultipartFile file = createMultipartFile("testFile1.txt", "File for testing - 1");
     mockMvc.perform(
-        multipart(BASIC_URI)
+        multipart(BASIC_URI_STORAGE_CONTROLLER)
             .file(file)
             .header(HttpHeaders.AUTHORIZATION,
             EncodeToBase64.createBasicAuthorization("admin")))
@@ -116,7 +121,7 @@ public class StorageControllerTest {
     String key2 = storageService.upload(createMultipartFile("test2.txt", "File for testing - 2"));
     String key3 = storageService.upload(createMultipartFile("test3.txt", "File for testing - 3"));
     MvcResult result = mockMvc.perform(
-        get(BASIC_URI).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
+        get(BASIC_URI_STORAGE_CONTROLLER).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
         .andExpect(status().isOk())
         .andReturn();
     String res = result.getResponse().getContentAsString();
@@ -129,16 +134,16 @@ public class StorageControllerTest {
   void testDeleteFile() throws Exception {
     String key = storageService.upload(createMultipartFile("test.txt", "File for testing"));
     MvcResult result = mockMvc.perform(
-        delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
+        delete(BASIC_URI_STORAGE_CONTROLLER + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
         .andExpect(status().isOk())
         .andReturn();
     assertTrue("true".equals(result.getResponse().getContentAsString()));
     mockMvc.perform(
-        delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("user")))
+        delete(BASIC_URI_STORAGE_CONTROLLER + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("user")))
         .andExpect(status().isForbidden())
         .andReturn();
     mockMvc.perform(
-        delete(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
+        delete(BASIC_URI_STORAGE_CONTROLLER + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
         .andExpect(status().isNotFound())
         .andReturn();
   }
@@ -147,7 +152,7 @@ public class StorageControllerTest {
   void testDownloadFile() throws Exception {
     String key = storageService.upload(createMultipartFile("test.txt", "File for testing"));
     MvcResult result = mockMvc.perform(
-        get(BASIC_URI + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
+        get(BASIC_URI_STORAGE_CONTROLLER + "/" + key).header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
         .andExpect(status().isOk())
         .andReturn();
     assertEquals(result.getResponse().getContentAsString(), "File for testing");
@@ -156,9 +161,67 @@ public class StorageControllerTest {
   @Test
   void testDownloadNotExistingFile() throws Exception {
     mockMvc.perform(
-        get(BASIC_URI + "/aaaaaaaaaaa").header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
+        get(BASIC_URI_STORAGE_CONTROLLER + "/aaaaaaaaaaa").header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("admin")))
         .andExpect(status().isNotFound())
         .andReturn();
+  }
+
+  // UserController tests
+  @Test
+  void testCreateUser() throws Exception {
+    mockMvc.perform(
+        post(BASIC_URI_USER_CONTROLLER + "register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{ \"login\": \"John_Doe\", \"password\": \"1234\" }")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect((ResultMatcher) jsonPath("$.login").value("John_Doe"))
+        .andReturn();
+  }
+
+  @Test
+  void testLoginUser() throws Exception {
+    mockMvc.perform(
+        post(BASIC_URI_USER_CONTROLLER + "login").header(HttpHeaders.AUTHORIZATION, EncodeToBase64.createBasicAuthorization("user")))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect((ResultMatcher) jsonPath("$.login").value("user"))
+        .andReturn();
+  }
+
+  @Test
+  void testChangeRole() throws Exception {
+    mockMvc.perform(
+        put(BASIC_URI_USER_CONTROLLER + "user/user/role/moder").header(HttpHeaders.AUTHORIZATION,
+            EncodeToBase64.createBasicAuthorization("admin")))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect((ResultMatcher) jsonPath("$.login").value("user"))
+        .andExpect((ResultMatcher) jsonPath("$.role").value("moder"))
+        .andReturn();
+    mockMvc.perform(
+        put(BASIC_URI_USER_CONTROLLER + "user/user/role/user").header(HttpHeaders.AUTHORIZATION,
+            EncodeToBase64.createBasicAuthorization("moder")))
+        .andExpect(status().isForbidden())
+        .andReturn();
+  }
+
+  @Test
+  void testRemoveUser() throws Exception {
+    mockMvc.perform(
+        delete(BASIC_URI_USER_CONTROLLER + "user/user").header(HttpHeaders.AUTHORIZATION,
+            EncodeToBase64.createBasicAuthorization("moder")))
+        .andExpect(status().isForbidden())
+        .andReturn();
+    mockMvc.perform(
+        delete(BASIC_URI_USER_CONTROLLER + "user/user").header(HttpHeaders.AUTHORIZATION,
+            EncodeToBase64.createBasicAuthorization("admin")))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect((ResultMatcher) jsonPath("$.login").value("user"))
+        .andReturn();
+
   }
 
   private MockMultipartFile createMultipartFile(String fileName, String fileContent) {
