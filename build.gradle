@@ -5,7 +5,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.8'
+    // id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.8'
 }
 
 repositories {
@@ -34,7 +34,7 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter:1.17.6'
     testImplementation 'org.testcontainers:mysql:1.17.6'
     testImplementation 'org.testcontainers:localstack:1.17.6'
-    swaggerCodegen 'org.openapitools:openapi-generator-cli:3.3.4'
+    // swaggerCodegen 'org.openapitools:openapi-generator-cli:3.3.4'
 }
 
 group = 'hiitsh.tasks'
@@ -42,14 +42,14 @@ version = '0.0.1-SNAPSHOT'
 description = 'task1'
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
-swaggerSources {
-  petstore {
-    inputFile = file('task1.yaml')
-    code {
-      language = 'spring'
-    }
-  }
-}
+// swaggerSources {
+//   petstore {
+//     inputFile = file('task1.yaml')
+//     code {
+//       language = 'spring'
+//     }
+//   }
+// }
 
 publishing {
     publications {
