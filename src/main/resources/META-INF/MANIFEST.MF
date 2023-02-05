@@ -1,0 +1,1 @@
+Main-Class: hiish.tasks.task1.Task1Application
