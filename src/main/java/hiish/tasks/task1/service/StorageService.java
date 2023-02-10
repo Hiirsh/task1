@@ -2,7 +2,7 @@ package hiish.tasks.task1.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import hiish.tasks.task1.dto.FileNameAndKeyDto;
+import hiish.tasks.task1.dto.file.FileNameAndKeyDto;
 import hiish.tasks.task1.model.DownloadedResource;
 
 public interface StorageService {

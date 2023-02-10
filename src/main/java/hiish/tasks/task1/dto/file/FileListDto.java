@@ -1,4 +1,4 @@
-package hiish.tasks.task1.dto;
+package hiish.tasks.task1.dto.file;
 
 import lombok.Builder;
 import lombok.Getter;

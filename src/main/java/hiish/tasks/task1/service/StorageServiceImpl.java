@@ -15,8 +15,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 
 import hiish.tasks.task1.dao.StorageRepository;
-import hiish.tasks.task1.dto.FileNameAndKeyDto;
 import hiish.tasks.task1.dto.exeptions.FileNotExist;
+import hiish.tasks.task1.dto.file.FileNameAndKeyDto;
 import hiish.tasks.task1.model.DownloadedResource;
 import hiish.tasks.task1.model.File;
 

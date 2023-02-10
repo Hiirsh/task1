@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import hiish.tasks.task1.dto.FileNameAndKeyDto;
-import hiish.tasks.task1.dto.UploadDto;
+import hiish.tasks.task1.dto.file.FileNameAndKeyDto;
+import hiish.tasks.task1.dto.file.UploadDto;
 import hiish.tasks.task1.model.DownloadedResource;
 import hiish.tasks.task1.service.StorageService;
 import lombok.RequiredArgsConstructor;
